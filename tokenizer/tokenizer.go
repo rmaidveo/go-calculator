@@ -67,18 +67,70 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			continue
 		case unicode.IsDigit(character) || character == decimalPointCharacter:
+			if state == IdentifierState && character == decimalPointCharacter {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			if state == DefaultState {
 				state = NumberState
 			}
 
-			if character == decimalPointCharacter {
+			if character == decimalPointCharacter && state == NumberState {
 				if numberHasDecimalPoint {
 					return nil, fmt.Errorf("duplicate decimal point in the number at position %d", index)
 				}
 
 				numberHasDecimalPoint = true
+			}
+
+			buffer.WriteRune(character)
+		case unicode.IsLetter(character) || character == '_':
+			if state == NumberState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				if value == string(decimalPointCharacter) {
+					return nil, fmt.Errorf("the number has only a decimal point at position %d", position)
+				}
+
+				tokens = append(tokens, Token{
+					Kind:     NumberToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
+			if state == DefaultState {
+				state = IdentifierState
 			}
 
 			buffer.WriteRune(character)
@@ -99,6 +151,20 @@ func Tokenize(text string) ([]Token, error) {
 				})
 
 				numberHasDecimalPoint = false
+				buffer.Reset()
+			}
+
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
 				buffer.Reset()
 			}
 
@@ -126,6 +192,20 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			tokens = append(tokens, Token{
 				Kind:     MinusToken,
 				Position: index,
@@ -147,6 +227,20 @@ func Tokenize(text string) ([]Token, error) {
 				})
 
 				numberHasDecimalPoint = false
+				buffer.Reset()
+			}
+
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
 				buffer.Reset()
 			}
 
@@ -174,6 +268,20 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			tokens = append(tokens, Token{
 				Kind:     SlashToken,
 				Position: index,
@@ -195,6 +303,20 @@ func Tokenize(text string) ([]Token, error) {
 				})
 
 				numberHasDecimalPoint = false
+				buffer.Reset()
+			}
+
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
 				buffer.Reset()
 			}
 
@@ -222,6 +344,20 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			tokens = append(tokens, Token{
 				Kind:     ExponentiationToken,
 				Position: index,
@@ -243,6 +379,20 @@ func Tokenize(text string) ([]Token, error) {
 				})
 
 				numberHasDecimalPoint = false
+				buffer.Reset()
+			}
+
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
 				buffer.Reset()
 			}
 
@@ -270,6 +420,20 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			tokens = append(tokens, Token{
 				Kind:     RightParenthesisToken,
 				Position: index,
@@ -294,6 +458,20 @@ func Tokenize(text string) ([]Token, error) {
 				buffer.Reset()
 			}
 
+			if state == IdentifierState {
+				state = DefaultState
+
+				value := buffer.String()
+				position := index - len(value)
+				tokens = append(tokens, Token{
+					Kind:     IdentifierToken,
+					Value:    value,
+					Position: position,
+				})
+
+				buffer.Reset()
+			}
+
 			tokens = append(tokens, Token{
 				Kind:     CommaToken,
 				Position: index,
@@ -312,6 +490,16 @@ func Tokenize(text string) ([]Token, error) {
 
 		tokens = append(tokens, Token{
 			Kind:     NumberToken,
+			Value:    value,
+			Position: position,
+		})
+	}
+
+	if state == IdentifierState {
+		value := buffer.String()
+		position := len(text) - len(value)
+		tokens = append(tokens, Token{
+			Kind:     IdentifierToken,
 			Value:    value,
 			Position: position,
 		})
