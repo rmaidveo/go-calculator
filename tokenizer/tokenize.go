@@ -3,27 +3,12 @@ package tokenizer
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unicode"
 )
 
 const (
 	decimalPointCharacter = '.'
-)
-
-type TokenKind int
-
-const (
-	PlusToken TokenKind = iota
-	MinusToken
-	AsteriskToken
-	SlashToken
-	PercentToken
-	ExponentiationToken
-	NumberToken
-	IdentifierToken
-	LeftParenthesisToken
-	RightParenthesisToken
-	CommaToken
 )
 
 type Token struct {
@@ -87,7 +72,7 @@ func Tokenize(text string) ([]Token, error) {
 			}
 
 			stateCtx.addCharacterToIdentifier(character)
-		case character == '+':
+		case strings.ContainsRune("+-*/%^(),", character):
 			token, err := stateCtx.createNumberToken(index)
 			if err != nil && !errors.Is(err, errNoToken) {
 				return nil, fmt.Errorf("unable to create a number token: %w", err)
@@ -104,176 +89,13 @@ func Tokenize(text string) ([]Token, error) {
 				tokens = append(tokens, token)
 			}
 
-			tokens = append(tokens, Token{
-				Kind:     PlusToken,
-				Position: index,
-			})
-		case character == '-':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
+			kind, err := ParseTokenKind(character)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse a token kind at position %d: %w", index, err)
 			}
 
 			tokens = append(tokens, Token{
-				Kind:     MinusToken,
-				Position: index,
-			})
-		case character == '*':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     AsteriskToken,
-				Position: index,
-			})
-		case character == '/':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     SlashToken,
-				Position: index,
-			})
-		case character == '%':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     PercentToken,
-				Position: index,
-			})
-		case character == '^':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     ExponentiationToken,
-				Position: index,
-			})
-		case character == '(':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     LeftParenthesisToken,
-				Position: index,
-			})
-		case character == ')':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     RightParenthesisToken,
-				Position: index,
-			})
-		case character == ',':
-			token, err := stateCtx.createNumberToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a number token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			token, err = stateCtx.createIdentifierToken(index)
-			if err != nil && !errors.Is(err, errNoToken) {
-				return nil, fmt.Errorf("unable to create a identifier token: %w", err)
-			}
-			if err == nil {
-				tokens = append(tokens, token)
-			}
-
-			tokens = append(tokens, Token{
-				Kind:     CommaToken,
+				Kind:     kind,
 				Position: index,
 			})
 		default:
