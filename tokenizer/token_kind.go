@@ -55,3 +55,12 @@ func (kind TokenKind) Precedence() int {
 		return 0
 	}
 }
+
+func (kind TokenKind) IsOperator() bool {
+	return kind == PlusToken ||
+		kind == MinusToken ||
+		kind == AsteriskToken ||
+		kind == SlashToken ||
+		kind == PercentToken ||
+		kind == ExponentiationToken
+}

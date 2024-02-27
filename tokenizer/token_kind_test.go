@@ -114,3 +114,30 @@ func TestTokenKind_Precedence(t *testing.T) {
 		})
 	}
 }
+
+func TestTokenKind_IsOperator(t *testing.T) {
+	tests := []struct {
+		name string
+		kind TokenKind
+		want assert.BoolAssertionFunc
+	}{
+		{name: "+", kind: PlusToken, want: assert.True},
+		{name: "-", kind: MinusToken, want: assert.True},
+		{name: "*", kind: AsteriskToken, want: assert.True},
+		{name: "/", kind: SlashToken, want: assert.True},
+		{name: "%", kind: PercentToken, want: assert.True},
+		{name: "^", kind: ExponentiationToken, want: assert.True},
+		{name: "number", kind: NumberToken, want: assert.False},
+		{name: "identifier", kind: IdentifierToken, want: assert.False},
+		{name: "(", kind: LeftParenthesisToken, want: assert.False},
+		{name: ")", kind: RightParenthesisToken, want: assert.False},
+		{name: ",", kind: CommaToken, want: assert.False},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.kind.IsOperator()
+
+			tt.want(t, got)
+		})
+	}
+}
