@@ -87,3 +87,30 @@ func TestParseTokenKind(t *testing.T) {
 		})
 	}
 }
+
+func TestTokenKind_Precedence(t *testing.T) {
+	tests := []struct {
+		name string
+		kind TokenKind
+		want int
+	}{
+		{name: "+", kind: PlusToken, want: 1},
+		{name: "-", kind: MinusToken, want: 1},
+		{name: "*", kind: AsteriskToken, want: 2},
+		{name: "/", kind: SlashToken, want: 2},
+		{name: "%", kind: PercentToken, want: 2},
+		{name: "^", kind: ExponentiationToken, want: 3},
+		{name: "number", kind: NumberToken, want: 0},
+		{name: "identifier", kind: IdentifierToken, want: 0},
+		{name: "(", kind: LeftParenthesisToken, want: 0},
+		{name: ")", kind: RightParenthesisToken, want: 0},
+		{name: ",", kind: CommaToken, want: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.kind.Precedence()
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
