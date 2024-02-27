@@ -141,3 +141,30 @@ func TestTokenKind_IsOperator(t *testing.T) {
 		})
 	}
 }
+
+func TestTokenKind_String(t *testing.T) {
+	tests := []struct {
+		name string
+		kind TokenKind
+		want string
+	}{
+		{name: "+", kind: PlusToken, want: "+"},
+		{name: "-", kind: MinusToken, want: "-"},
+		{name: "*", kind: AsteriskToken, want: "*"},
+		{name: "/", kind: SlashToken, want: "/"},
+		{name: "%", kind: PercentToken, want: "%"},
+		{name: "^", kind: ExponentiationToken, want: "^"},
+		{name: "number", kind: NumberToken, want: ""},
+		{name: "identifier", kind: IdentifierToken, want: ""},
+		{name: "(", kind: LeftParenthesisToken, want: "("},
+		{name: ")", kind: RightParenthesisToken, want: ")"},
+		{name: ",", kind: CommaToken, want: ","},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.kind.String()
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

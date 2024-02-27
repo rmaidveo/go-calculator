@@ -64,3 +64,28 @@ func (kind TokenKind) IsOperator() bool {
 		kind == PercentToken ||
 		kind == ExponentiationToken
 }
+
+func (kind TokenKind) String() string {
+	switch kind {
+	case PlusToken:
+		return "+"
+	case MinusToken:
+		return "-"
+	case AsteriskToken:
+		return "*"
+	case SlashToken:
+		return "/"
+	case PercentToken:
+		return "%"
+	case ExponentiationToken:
+		return "^"
+	case LeftParenthesisToken:
+		return "("
+	case RightParenthesisToken:
+		return ")"
+	case CommaToken:
+		return ","
+	default:
+		return ""
+	}
+}
