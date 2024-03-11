@@ -26,6 +26,12 @@ func TestTranslate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name:    "success/single variable",
+			args:    args{tokens: []tokenizer.Token{{Kind: tokenizer.IdentifierToken, Value: "x", Position: 42}}},
+			want:    []Command{{Kind: PushVariableCommand, Operand: "x", Position: 42}},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "success/single operator",
 			args: args{
 				tokens: []tokenizer.Token{
@@ -104,6 +110,55 @@ func TestTranslate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "success/function call",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.IdentifierToken, Value: "sin", Position: 105},
+					{Kind: tokenizer.LeftParenthesisToken, Value: "(", Position: 110},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 123},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 130},
+				},
+				functions: map[string]struct{}{"sin": {}},
+			},
+			want: []Command{
+				{Kind: PushNumberCommand, Operand: "12", Position: 112},
+				{Kind: PushNumberCommand, Operand: "23", Position: 123},
+				{Kind: CallFunctionCommand, Operand: "+", Position: 120},
+				{Kind: CallFunctionCommand, Operand: "sin", Position: 105},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "success/function call (with several operands)",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.IdentifierToken, Value: "sin", Position: 105},
+					{Kind: tokenizer.LeftParenthesisToken, Value: "(", Position: 110},
+					{Kind: tokenizer.NumberToken, Value: "5", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 123},
+					{Kind: tokenizer.CommaToken, Value: ",", Position: 125},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 130},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 135},
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 150},
+				},
+				functions: map[string]struct{}{"sin": {}},
+			},
+			want: []Command{
+				{Kind: PushNumberCommand, Operand: "5", Position: 112},
+				{Kind: PushNumberCommand, Operand: "12", Position: 123},
+				{Kind: CallFunctionCommand, Operand: "+", Position: 120},
+				{Kind: PushNumberCommand, Operand: "23", Position: 130},
+				{Kind: PushNumberCommand, Operand: "42", Position: 142},
+				{Kind: CallFunctionCommand, Operand: "*", Position: 135},
+				{Kind: CallFunctionCommand, Operand: "sin", Position: 105},
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "error/no left parenthesis is found",
 			args: args{
 				tokens: []tokenizer.Token{
@@ -129,6 +184,25 @@ func TestTranslate(t *testing.T) {
 					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 140},
 					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
 				},
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+		{
+			name: "error/function call/no left parenthesis is found",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.IdentifierToken, Value: "sin", Position: 105},
+					{Kind: tokenizer.NumberToken, Value: "5", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 123},
+					{Kind: tokenizer.CommaToken, Value: ",", Position: 125},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 130},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 135},
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 150},
+				},
+				functions: map[string]struct{}{"sin": {}},
 			},
 			want:    nil,
 			wantErr: assert.Error,
