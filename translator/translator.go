@@ -1,6 +1,10 @@
 package translator
 
-import "github.com/rmaidveo/go-calculator/tokenizer"
+import (
+	"fmt"
+
+	"github.com/rmaidveo/go-calculator/tokenizer"
+)
 
 type CommandKind int
 
@@ -44,11 +48,37 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 			}
 
 			tokenStack = append(tokenStack, token)
+		case token.Kind == tokenizer.LeftParenthesisToken:
+			tokenStack = append(tokenStack, token)
+		case token.Kind == tokenizer.RightParenthesisToken:
+			for len(tokenStack) != 0 {
+				lastStackToken := tokenStack[len(tokenStack)-1]
+				if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
+					break
+				}
+
+				commands = append(commands, Command{
+					Kind:     CallFunctionCommand,
+					Operand:  lastStackToken.Kind.String(),
+					Position: lastStackToken.Position,
+				})
+
+				tokenStack = tokenStack[:len(tokenStack)-1]
+			}
+
+			if len(tokenStack) == 0 {
+				return nil, fmt.Errorf("no left parenthesis is found, but a right parenthesis at position %d", token.Position)
+			}
+
+			tokenStack = tokenStack[:len(tokenStack)-1]
 		}
 	}
 
 	for len(tokenStack) != 0 {
 		lastStackToken := tokenStack[len(tokenStack)-1]
+		if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
+			return nil, fmt.Errorf("unexpected left parenthesis is found at position %d", lastStackToken.Position)
+		}
 
 		commands = append(commands, Command{
 			Kind:     CallFunctionCommand,

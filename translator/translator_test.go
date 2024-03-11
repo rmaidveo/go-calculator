@@ -20,13 +20,13 @@ func TestTranslate(t *testing.T) {
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
-			name:    "single number",
+			name:    "success/single number",
 			args:    args{tokens: []tokenizer.Token{{Kind: tokenizer.NumberToken, Value: "23", Position: 42}}},
 			want:    []Command{{Kind: PushNumberCommand, Operand: "23", Position: 42}},
 			wantErr: assert.NoError,
 		},
 		{
-			name: "single operator",
+			name: "success/single operator",
 			args: args{
 				tokens: []tokenizer.Token{
 					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
@@ -42,7 +42,7 @@ func TestTranslate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name: "multiple operators",
+			name: "success/multiple operators",
 			args: args{
 				tokens: []tokenizer.Token{
 					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
@@ -62,7 +62,7 @@ func TestTranslate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name: "multiple operators (in a different order)",
+			name: "success/multiple operators (in a different order)",
 			args: args{
 				tokens: []tokenizer.Token{
 					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
@@ -80,6 +80,58 @@ func TestTranslate(t *testing.T) {
 				{Kind: CallFunctionCommand, Operand: "+", Position: 140},
 			},
 			wantErr: assert.NoError,
+		},
+		{
+			name: "success/multiple operators (with parentheses)",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.LeftParenthesisToken, Value: "(", Position: 110},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 123},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 130},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 140},
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
+				},
+			},
+			want: []Command{
+				{Kind: PushNumberCommand, Operand: "12", Position: 112},
+				{Kind: PushNumberCommand, Operand: "23", Position: 123},
+				{Kind: CallFunctionCommand, Operand: "+", Position: 120},
+				{Kind: PushNumberCommand, Operand: "42", Position: 142},
+				{Kind: CallFunctionCommand, Operand: "*", Position: 140},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "error/no left parenthesis is found",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 123},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 130},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 140},
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
+				},
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+		{
+			name: "error/unexpected left parenthesis",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.LeftParenthesisToken, Value: "(", Position: 110},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 123},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 140},
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 142},
+				},
+			},
+			want:    nil,
+			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {
