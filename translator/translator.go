@@ -44,43 +44,19 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 				Position: token.Position,
 			})
 		case token.Kind.IsOperator():
-			for {
-				lastStackToken, ok := tokenStack.Pop()
-				if !ok {
-					break
-				}
-				if !lastStackToken.Kind.IsOperator() || lastStackToken.Kind.Precedence() <= token.Kind.Precedence() {
-					tokenStack.Push(lastStackToken)
-					break
-				}
-
-				commands = append(commands, Command{
-					Kind:     CallFunctionCommand,
-					Operand:  lastStackToken.Kind.String(),
-					Position: lastStackToken.Position,
-				})
-			}
+			additionalCommands := unwindStack(&tokenStack, func(lastStackToken tokenizer.Token) bool {
+				return !lastStackToken.Kind.IsOperator() || lastStackToken.Kind.Precedence() <= token.Kind.Precedence()
+			})
+			commands = append(commands, additionalCommands...)
 
 			tokenStack.Push(token)
 		case token.Kind == tokenizer.LeftParenthesisToken:
 			tokenStack.Push(token)
 		case token.Kind == tokenizer.RightParenthesisToken:
-			for {
-				lastStackToken, ok := tokenStack.Pop()
-				if !ok {
-					break
-				}
-				if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
-					tokenStack.Push(lastStackToken)
-					break
-				}
-
-				commands = append(commands, Command{
-					Kind:     CallFunctionCommand,
-					Operand:  lastStackToken.Kind.String(),
-					Position: lastStackToken.Position,
-				})
-			}
+			additionalCommands := unwindStack(&tokenStack, func(lastStackToken tokenizer.Token) bool {
+				return lastStackToken.Kind == tokenizer.LeftParenthesisToken
+			})
+			commands = append(commands, additionalCommands...)
 
 			if _, ok := tokenStack.Pop(); !ok {
 				return nil, fmt.Errorf("no left parenthesis is found, but a right parenthesis at position %d", token.Position)
@@ -99,22 +75,10 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 				}
 			}
 		case token.Kind == tokenizer.CommaToken:
-			for {
-				lastStackToken, ok := tokenStack.Pop()
-				if !ok {
-					break
-				}
-				if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
-					tokenStack.Push(lastStackToken)
-					break
-				}
-
-				commands = append(commands, Command{
-					Kind:     CallFunctionCommand,
-					Operand:  lastStackToken.Kind.String(),
-					Position: lastStackToken.Position,
-				})
-			}
+			additionalCommands := unwindStack(&tokenStack, func(lastStackToken tokenizer.Token) bool {
+				return lastStackToken.Kind == tokenizer.LeftParenthesisToken
+			})
+			commands = append(commands, additionalCommands...)
 
 			if tokenStack.IsEmpty() {
 				return nil, fmt.Errorf("no left parenthesis is found, but a comma at position %d", token.Position)
@@ -122,13 +86,31 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 		}
 	}
 
+	additionalCommands := unwindStack(&tokenStack, func(lastStackToken tokenizer.Token) bool {
+		return lastStackToken.Kind == tokenizer.LeftParenthesisToken
+	})
+	commands = append(commands, additionalCommands...)
+
+	if lastStackToken, ok := tokenStack.Pop(); ok {
+		return nil, fmt.Errorf("unexpected left parenthesis is found at position %d", lastStackToken.Position)
+	}
+
+	return commands, nil
+}
+
+func unwindStack(
+	tokenStack *containers.Stack[tokenizer.Token],
+	stopCondition func(lastStackToken tokenizer.Token) bool,
+) []Command {
+	var commands []Command
 	for {
 		lastStackToken, ok := tokenStack.Pop()
 		if !ok {
 			break
 		}
-		if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
-			return nil, fmt.Errorf("unexpected left parenthesis is found at position %d", lastStackToken.Position)
+		if stopCondition(lastStackToken) {
+			tokenStack.Push(lastStackToken)
+			break
 		}
 
 		commands = append(commands, Command{
@@ -138,5 +120,5 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 		})
 	}
 
-	return commands, nil
+	return commands
 }
