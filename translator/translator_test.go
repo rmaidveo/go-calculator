@@ -110,6 +110,28 @@ func TestTranslate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "success/multiple operators (with parentheses in a different order)",
+			args: args{
+				tokens: []tokenizer.Token{
+					{Kind: tokenizer.NumberToken, Value: "42", Position: 100},
+					{Kind: tokenizer.AsteriskToken, Value: "*", Position: 105},
+					{Kind: tokenizer.LeftParenthesisToken, Value: "(", Position: 110},
+					{Kind: tokenizer.NumberToken, Value: "12", Position: 112},
+					{Kind: tokenizer.PlusToken, Value: "+", Position: 120},
+					{Kind: tokenizer.NumberToken, Value: "23", Position: 123},
+					{Kind: tokenizer.RightParenthesisToken, Value: ")", Position: 130},
+				},
+			},
+			want: []Command{
+				{Kind: PushNumberCommand, Operand: "42", Position: 100},
+				{Kind: PushNumberCommand, Operand: "12", Position: 112},
+				{Kind: PushNumberCommand, Operand: "23", Position: 123},
+				{Kind: CallFunctionCommand, Operand: "+", Position: 120},
+				{Kind: CallFunctionCommand, Operand: "*", Position: 105},
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "success/function call",
 			args: args{
 				tokens: []tokenizer.Token{

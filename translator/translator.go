@@ -3,6 +3,7 @@ package translator
 import (
 	"fmt"
 
+	"github.com/rmaidveo/go-calculator/containers"
 	"github.com/rmaidveo/go-calculator/tokenizer"
 )
 
@@ -22,7 +23,7 @@ type Command struct {
 
 func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Command, error) {
 	var commands []Command
-	var tokenStack []tokenizer.Token
+	var tokenStack containers.Stack[tokenizer.Token]
 	for _, token := range tokens {
 		switch {
 		case token.Kind == tokenizer.NumberToken:
@@ -33,7 +34,7 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 			})
 		case token.Kind == tokenizer.IdentifierToken:
 			if _, ok := functions[token.Value]; ok {
-				tokenStack = append(tokenStack, token)
+				tokenStack.Push(token)
 				continue
 			}
 
@@ -43,9 +44,13 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 				Position: token.Position,
 			})
 		case token.Kind.IsOperator():
-			for len(tokenStack) != 0 {
-				lastStackToken := tokenStack[len(tokenStack)-1]
+			for {
+				lastStackToken, ok := tokenStack.Pop()
+				if !ok {
+					break
+				}
 				if !lastStackToken.Kind.IsOperator() || lastStackToken.Kind.Precedence() <= token.Kind.Precedence() {
+					tokenStack.Push(lastStackToken)
 					break
 				}
 
@@ -54,17 +59,19 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 					Operand:  lastStackToken.Kind.String(),
 					Position: lastStackToken.Position,
 				})
-
-				tokenStack = tokenStack[:len(tokenStack)-1]
 			}
 
-			tokenStack = append(tokenStack, token)
+			tokenStack.Push(token)
 		case token.Kind == tokenizer.LeftParenthesisToken:
-			tokenStack = append(tokenStack, token)
+			tokenStack.Push(token)
 		case token.Kind == tokenizer.RightParenthesisToken:
-			for len(tokenStack) != 0 {
-				lastStackToken := tokenStack[len(tokenStack)-1]
+			for {
+				lastStackToken, ok := tokenStack.Pop()
+				if !ok {
+					break
+				}
 				if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
+					tokenStack.Push(lastStackToken)
 					break
 				}
 
@@ -73,32 +80,32 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 					Operand:  lastStackToken.Kind.String(),
 					Position: lastStackToken.Position,
 				})
-
-				tokenStack = tokenStack[:len(tokenStack)-1]
 			}
 
-			if len(tokenStack) == 0 {
+			if _, ok := tokenStack.Pop(); !ok {
 				return nil, fmt.Errorf("no left parenthesis is found, but a right parenthesis at position %d", token.Position)
 			}
 
-			tokenStack = tokenStack[:len(tokenStack)-1]
-
-			if len(tokenStack) != 0 {
-				lastStackToken := tokenStack[len(tokenStack)-1]
+			lastStackToken, ok := tokenStack.Pop()
+			if ok {
 				if lastStackToken.Kind == tokenizer.IdentifierToken {
 					commands = append(commands, Command{
 						Kind:     CallFunctionCommand,
 						Operand:  lastStackToken.Value,
 						Position: lastStackToken.Position,
 					})
-
-					tokenStack = tokenStack[:len(tokenStack)-1]
+				} else {
+					tokenStack.Push(lastStackToken)
 				}
 			}
 		case token.Kind == tokenizer.CommaToken:
-			for len(tokenStack) != 0 {
-				lastStackToken := tokenStack[len(tokenStack)-1]
+			for {
+				lastStackToken, ok := tokenStack.Pop()
+				if !ok {
+					break
+				}
 				if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
+					tokenStack.Push(lastStackToken)
 					break
 				}
 
@@ -107,18 +114,19 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 					Operand:  lastStackToken.Kind.String(),
 					Position: lastStackToken.Position,
 				})
-
-				tokenStack = tokenStack[:len(tokenStack)-1]
 			}
 
-			if len(tokenStack) == 0 {
+			if tokenStack.IsEmpty() {
 				return nil, fmt.Errorf("no left parenthesis is found, but a comma at position %d", token.Position)
 			}
 		}
 	}
 
-	for len(tokenStack) != 0 {
-		lastStackToken := tokenStack[len(tokenStack)-1]
+	for {
+		lastStackToken, ok := tokenStack.Pop()
+		if !ok {
+			break
+		}
 		if lastStackToken.Kind == tokenizer.LeftParenthesisToken {
 			return nil, fmt.Errorf("unexpected left parenthesis is found at position %d", lastStackToken.Position)
 		}
@@ -128,8 +136,6 @@ func Translate(tokens []tokenizer.Token, functions map[string]struct{}) ([]Comma
 			Operand:  lastStackToken.Kind.String(),
 			Position: lastStackToken.Position,
 		})
-
-		tokenStack = tokenStack[:len(tokenStack)-1]
 	}
 
 	return commands, nil
